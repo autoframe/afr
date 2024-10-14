@@ -1,0 +1,2 @@
+# afr
+Autoframe CORE

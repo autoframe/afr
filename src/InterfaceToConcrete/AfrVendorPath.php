@@ -28,8 +28,6 @@ use function filemtime;
  */
 class AfrVendorPath
 {
-    protected static string $sVendor = 'vendor';
-    protected static string $sInstalledJson = '/composer/installed.json';
     protected static string $sVendorPath;
     protected static string $sBaseDirPath;
     protected static array $aComposerJsonData;
@@ -67,7 +65,7 @@ class AfrVendorPath
             return self::$sBaseDirPath = substr(
                 $sVendorPath,
                 0,
-                -strlen(self::$sVendor) - 1
+                -strlen('vendor') - 1
             );
         }
         return self::$sBaseDirPath;
@@ -99,7 +97,7 @@ class AfrVendorPath
         if (!self::getVendorPath()) {
             return 0;
         }
-        $sFile = self::getVendorPath() . self::$sInstalledJson;
+        $sFile = self::getVendorPath() . '/composer/installed.json';
         return is_file($sFile) ? (int)filemtime($sFile) : 0;
     }
 
@@ -268,11 +266,11 @@ class AfrVendorPath
         $sDsUp = '..' . $sDs;
         foreach ([
                      __DIR__, //production, already installed in composer
-                     __DIR__ . $sDs . str_repeat($sDsUp, 2) . self::$sVendor, //local dev1
-                     __DIR__ . $sDs . str_repeat($sDsUp, 3) . self::$sVendor, //local dev2
-                     __DIR__ . $sDs . str_repeat($sDsUp, 4) . self::$sVendor, //local dev3
-                     __DIR__ . $sDs . str_repeat($sDsUp, 5) . self::$sVendor, //local dev4
-                     __DIR__ . $sDs . str_repeat($sDsUp, 6) . self::$sVendor, //local dev5
+                     __DIR__ . $sDs . str_repeat($sDsUp, 2) .  'vendor', //local dev1
+                     __DIR__ . $sDs . str_repeat($sDsUp, 3) .  'vendor', //local dev2
+                     __DIR__ . $sDs . str_repeat($sDsUp, 4) .  'vendor', //local dev3
+                     __DIR__ . $sDs . str_repeat($sDsUp, 5) .  'vendor', //local dev4
+                     __DIR__ . $sDs . str_repeat($sDsUp, 6) .  'vendor', //local dev5
                  ] as $sDir) {
             $sVendorPath = self::checkForComposerVendorPath($sDir);
             if ($sVendorPath) {
@@ -301,7 +299,7 @@ class AfrVendorPath
      */
     protected static function checkForComposerVendorPath(string $sPath): string
     {
-        $arRealPath = explode(self::$sVendor, (string)realpath($sPath));
+        $arRealPath = explode( 'vendor', (string)realpath($sPath));
         $iParts = count($arRealPath);
         if ($iParts < 2) {
             return '';
@@ -315,8 +313,8 @@ class AfrVendorPath
             return '';
         }
         $arRealPath [$iParts - 1] = ''; //clear last part
-        $sRealPath = implode(self::$sVendor, $arRealPath);
-        return is_file($sRealPath . self::$sInstalledJson) ? (string)realpath($sRealPath) : '';
+        $sRealPath = implode( 'vendor', $arRealPath);
+        return is_file($sRealPath . '/composer/installed.json') ? (string)realpath($sRealPath) : '';
     }
 
     /**
@@ -341,5 +339,33 @@ class AfrVendorPath
         }
         return [];
     }
+
+	/**
+	 * Check if the given path is located inside the vendor directory.
+	 *
+	 * @param string $sPath The path to check.
+	 * @return bool True if the path is inside the vendor directory, false otherwise.
+	 */
+	public static function pathIsInsideVendorDir(string $sPath): bool
+	{
+		$sPath = strtr($sPath, '\\', '/');
+		if (strpos($sPath . '/', '/vendor/') !== false) {
+			$aSegments = [];
+			foreach (explode('/', $sPath) as $i => $sPart) {
+				if ($sPart === '' && $i || $sPart === '.') {
+					continue;
+				}
+				if ($sPart === '..') {
+					if (!empty($aSegments)) {
+						array_pop($aSegments);
+					}
+				} else {
+					$aSegments[] = $sPart;
+				}
+			}
+			return strpos(implode('/', $aSegments) . '/', '/vendor/') !== false;
+		}
+		return false;
+	}
 
 }

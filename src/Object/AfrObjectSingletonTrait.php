@@ -58,7 +58,8 @@ trait AfrObjectSingletonTrait
             // of the current class". That detail is important because when the
             // method is called on the subclass, we want an instance of that
             // subclass to be created here.
-            return self::$instances[$subclass] = new static();
+            return self::renewInstance(...func_get_args());
+//            return self::$instances[$subclass] = new static();
             // TODO adaugat aici apply afr config daca este instanta de interfata sau trait sau clasa configurabila
         }
         return self::$instances[$subclass];

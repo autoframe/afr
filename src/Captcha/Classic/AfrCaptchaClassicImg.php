@@ -7,7 +7,6 @@ namespace Autoframe\Core\Captcha\Classic;
 use Autoframe\Core\FileSystem\Exception\AfrFileSystemException;
 use Autoframe\Core\Captcha\AfrCaptcha;
 use Autoframe\Core\Exception\AfrException;
-use Autoframe\Core\Object\AfrObjectSingletonTrait;
 use Autoframe\Core\Session\AfrSessionFactory;
 use Autoframe\Core\Session\AfrSessionPhp;
 use Autoframe\Core\FileSystem\Traversing\AfrDirTraversingFileListTrait;
@@ -15,7 +14,6 @@ use Autoframe\Core\FileSystem\Traversing\AfrDirTraversingFileListTrait;
 
 abstract class AfrCaptchaClassicImg extends AfrCaptcha
 {
-    //use AfrObjectSingletonTrait;
     use AfrCaptchaClassicTrait;
     use AfrDirTraversingFileListTrait;
 

@@ -1,6 +1,6 @@
 <?php
 
-namespace Autoframe\Core\Env;
+namespace Autoframe\Core\Env\Validator;
 
 use Autoframe\Core\Env\Exception\AfrEnvException;
 

@@ -1,23 +1,13 @@
 <?php
 declare(strict_types=1);
 
-namespace Autoframe\Core\Env;
+namespace Autoframe\Core\Env\Parser;
 
 use Autoframe\Core\Env\Exception\AfrEnvException;
 use Autoframe\Core\DesignPatterns\Singleton\AfrSingletonAbstractClass;
 
 class AfrEnvParserClass extends AfrSingletonAbstractClass implements AfrEnvParserInterface
 {
-    protected string $n = "\n"; //new line
-    protected string $rn = "\r\n"; // return carriage new line
-    protected string $r = "\r"; // return carriage
-    protected string $t = "\t"; // tab
-    protected string $sp = ' '; // space
-
-    protected string $sq = "'"; //single quot
-    protected string $dq = '"'; //double quot
-    protected string $c = '#'; //comment
-    protected string $eq = '='; //equal
 
     public bool $bDebugFlag = false; //debug flag
     protected array $aDecision = [];
@@ -28,7 +18,6 @@ class AfrEnvParserClass extends AfrSingletonAbstractClass implements AfrEnvParse
      * @param string $sEnvLines
      * @return array
      */
-
     public function parseStr(string $sEnvLines): array
     {
         $this->aDecision = $this->aLines = [];
@@ -55,9 +44,9 @@ class AfrEnvParserClass extends AfrSingletonAbstractClass implements AfrEnvParse
                     //you can have a #\n so threat it as it is
                     //$sDecision = 'Comment start #'.$i;
                 } elseif (strlen(trim($sKey)) > 0) { //key read is done
-                    if ($chr === $this->sp || $chr === $this->t) {
+                    if ($chr === ' ' || $chr === "\t") {
                         $sDecision = 'Indent after key #' . $i; //indent / nothing
-                    } elseif ($chr === $this->dq || $chr === $this->sq) {
+                    } elseif ($chr === '"' || $chr === "'") {
                         $sDecision = 'Quot start #' . $i;
                         $bQuot = true;
                         $sQuot = $chr;
@@ -68,7 +57,7 @@ class AfrEnvParserClass extends AfrSingletonAbstractClass implements AfrEnvParse
                         $bVal = true;
                         $sVal = $chr;
                     }
-                } elseif ($chr === $this->sp || $chr === $this->t) {
+                } elseif ($chr === ' ' || $chr === "\t") {
                     $sDecision = 'Indent #' . $i; //indent / nothing
                 } elseif (is_numeric($chr)) {
                     $sDecision = 'Numeric! #' . $i; //skip numeric chars in front of keys
@@ -93,11 +82,11 @@ class AfrEnvParserClass extends AfrSingletonAbstractClass implements AfrEnvParse
             }
             // KEY
             if (!$sDecision && $bKey) {
-                if ($chr === $this->eq) {
+                if ($chr === '=') {
                     $sDecision = 'End Key #' . $i;
                     $bKey = false;
                 } elseif (
-                    ($prevChr === $this->sp || $prevChr === $this->t) &&
+                    ($prevChr === ' ' || $prevChr === "\t") &&
                     $this->xComment($i, $sDecision, $chr, $bComment, $sComment)
                 ) {
                     //$sDecision = 'Comment start #' . $i;
@@ -127,7 +116,7 @@ class AfrEnvParserClass extends AfrSingletonAbstractClass implements AfrEnvParse
             //VAL
             if (!$sDecision && $bVal) {
                 if (
-                    ($prevChr === $this->sp || $prevChr === $this->t) &&
+                    ($prevChr === ' ' || $prevChr === "\t") &&
                     $this->xComment($i, $sDecision, $chr, $bComment, $sComment)
                 ) {
                     //$sDecision = 'Comment start #' . $i;
@@ -338,10 +327,10 @@ class AfrEnvParserClass extends AfrSingletonAbstractClass implements AfrEnvParse
      */
     protected function xEol(&$i, &$sDecision, $chr, $chrChr, &$iLine): bool
     {
-        if ($chrChr === $this->rn) {
+        if ($chrChr === "\r\n") {
             $i++; //skip next char
         }
-        $bEol = $chr === $this->n || $chr === $this->r || $chrChr === $this->rn || strlen($chrChr) < 1;//eof
+        $bEol = $chr === "\n" || $chr === "\r" || $chrChr === "\r\n" || strlen($chrChr) < 1;//eof
         if ($bEol) {
             $sDecision = 'EOL #' . $i;
             $iLine++;
@@ -360,7 +349,7 @@ class AfrEnvParserClass extends AfrSingletonAbstractClass implements AfrEnvParse
      */
     protected function xComment($i, &$sDecision, $chr, &$bComment, &$sComment): bool
     {
-        if ($chr === $this->c) {
+        if ($chr === '#') {
             $sDecision = 'Comment start #' . $i;
             $bComment = true;
             $sComment = $chr;

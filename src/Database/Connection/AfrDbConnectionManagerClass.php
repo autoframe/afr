@@ -478,13 +478,12 @@ class AfrDbConnectionManagerClass extends AfrSingletonAbstractClass implements A
 		}
 		$aConfig = $this->aAliases[$sAlias];
 		if (!$this->isConnected($sAlias)) {
-			/*$sDriver = $aConfig[static::INFO][static::DRIVER];
-			if (!in_array($sDriver, PDO::getAvailableDrivers())) {
+			if (!in_array($aConfig[static::INFO][static::DRIVER], PDO::getAvailableDrivers())) {
 				throw new AfrDatabaseConnectionException(
-					"Driver [$sDriver}] is not supported by PDO driver list: " .
+					'Driver ['.$aConfig[static::INFO][static::DRIVER].'] is not supported by PDO driver list: ' .
 					implode(', ', PDO::getAvailableDrivers())
 				);
-			}*/
+			}
 			try {
 				//    debug_print_backtrace();
 				$sFqcnPdo = $aConfig[static::FQCN_PDO];

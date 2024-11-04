@@ -20,8 +20,8 @@ class AfrEnvEmptyTest extends TestCase
         $this->assertSame(null,  $oEnv->getEnv('APP_ENV'));
         $this->assertSame(true,  $oEnv->isDev());
 
-        $oEnv->setInlineEnvVar('APP_ENV', 'LOCAL');
-        $this->assertSame('LOCAL',  $oEnv->getEnv('APP_ENV'));
+        $oEnv->setInlineEnvVar('APP_ENV', 'STAGING');
+        $this->assertSame('STAGING',  $oEnv->getEnv('APP_ENV'));
     }
 
 

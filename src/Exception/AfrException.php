@@ -41,7 +41,7 @@ if (!class_exists(__NAMESPACE__ . '\AfrException', false)) {
          */
         public function __toString(): string
         {
-            return __CLASS__ . ": [{$this->code}]: {$this->message}\n";
+            return explode('\\',get_class($this))[0] . "[{$this->code}] {$this->message}\n";
         }
 
     }

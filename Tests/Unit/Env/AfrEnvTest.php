@@ -22,7 +22,7 @@ class AfrEnvTest extends TestCase
      */
     public function AfrEnvAllInOneTest(): void
     {
-        $oEnv = AfrEnv::getInstance()->setWorkDir(__DIR__ . DIRECTORY_SEPARATOR . 'Env');
+        $oEnv = AfrEnv::getInstance()->setBaseDir(__DIR__ . DIRECTORY_SEPARATOR . 'Env');
         
         $oEnv->xetAfrEnvParser();
         if(self::insideProductionVendorDir()){
@@ -31,7 +31,7 @@ class AfrEnvTest extends TestCase
         else{
             $oEnv->readEnv(1)->flush();
             sleep(1);
-            $oEnv->setWorkDir(__DIR__ . DIRECTORY_SEPARATOR . 'Env');
+            $oEnv->setBaseDir(__DIR__ . DIRECTORY_SEPARATOR . 'Env');
             $oEnv->readEnv(2);
         }
 
@@ -54,7 +54,6 @@ class AfrEnvTest extends TestCase
 
         $this->assertSame(true, $oEnv->isDev());
         $this->assertSame(false, $oEnv->isProduction());
-        $this->assertSame(false, $oEnv->isLocal());
         $this->assertSame(false, $oEnv->isStaging());
 
 
@@ -144,7 +143,8 @@ class AfrEnvTest extends TestCase
         ]);
         $oEnv->setInlineEnvVar('APP_ENV', 'CUSTOM');
         $this->assertSame('CUSTOM',$oEnv->getEnv('APP_ENV'));
-        $this->assertSame(false, $oEnv->isDev());
+        $this->assertSame(true, $oEnv->isDev());
+        $this->assertSame(true, $oEnv->setInlineEnvVar('AFR_ENV','PRODUCTION')->isProduction());
     }
 
 

@@ -4,13 +4,11 @@ declare(strict_types=1);
 
 namespace Autoframe\Core\Captcha;
 
-use Autoframe\Core\Object\AfrObjectSingletonTrait;
 use Autoframe\Core\String\AfrStr;
 use Autoframe\Core\Arr\Merge\AfrArrMergeProfileClass;
 
 abstract class AfrCaptcha
 {
-   // use AfrObjectSingletonTrait;
 
     protected array $aParams = [];
 

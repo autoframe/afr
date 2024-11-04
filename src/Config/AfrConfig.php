@@ -15,8 +15,8 @@ namespace Autoframe\Core\Config;
  *
  * use Illuminate\Support\Facades\App;
  * $environment = App::environment();
- * if (App::environment('local')) { // The environment is local }
- * if (App::environment(['local', 'staging'])) { // The environment is either local OR staging... }
+ * if (App::environment('dev')) { // The environment is local }
+ * if (App::environment(['dev', 'staging'])) { // The environment is either local OR staging... }
  *
  * $value = config('app.timezone');
  * config(['app.timezone' => 'America/Chicago']);

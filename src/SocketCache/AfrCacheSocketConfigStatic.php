@@ -54,7 +54,7 @@ trait AfrCacheSocketConfigStatic
     }
 
     /**
-     * We use only the default class settings if in_array($sName,['local','default','dev'])
+     * We use only the default class settings if in_array($sName,['local','default','dev']) TODO retest ENV here
      * @param string $sDriver
      * @return AfrCacheSocketConfig
      * @throws AfrCacheSocketException

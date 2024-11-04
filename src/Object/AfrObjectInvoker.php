@@ -16,7 +16,7 @@ trait AfrObjectInvoker
 
     protected static function invokeRouteMethod($fn, array $params = [], string $namespace = ''): bool
     {
-        return self::invokeMethod($fn, $params, $namespace, true) === false ? false : true;
+        return !(self::invokeMethod($fn, $params, $namespace, true) === false);
     }
 
 

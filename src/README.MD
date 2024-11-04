@@ -1,3 +1,17 @@
+# TODO:
+
+
+- AfrEvent + Tenant Config C:\xampp\htdocs\core\src\!b2b-app\afr\Tenant\AfrEvent.php
+- ENV + 
+- logger class
+- DATABASE, de terminat cu PDO base QUERY!
+- de integrat Memcached / socket cache in DB
+- AW CONTAINER
+- afrConfig cel mai probabil ca si design pattern
+- routing
+- views...
+
+
 # FILOZIFIA:
 
 - fiecare interfata va fi un serviciu

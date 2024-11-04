@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-namespace Autoframe\Core\Env;
+namespace Autoframe\Core\Env\Parser;
 
 use Autoframe\Core\Env\Exception\AfrEnvException;
 use Autoframe\Core\DesignPatterns\Singleton\AfrSingletonInterface;

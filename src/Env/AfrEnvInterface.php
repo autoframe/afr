@@ -6,6 +6,9 @@ use Autoframe\Core\Arr\Export\AfrArrExportArrayAsStringInterface;
 use Autoframe\Core\Env\Exception\AfrEnvException;
 use Autoframe\Core\FileSystem\OverWrite\AfrOverWriteInterface;
 use Autoframe\Core\FileSystem\Traversing\AfrDirTraversingFileListInterface;
+use Autoframe\Core\Env\Parser\AfrEnvParserInterface;
+use Autoframe\Core\Env\Validator\AfrEnvValidatorInterface;
+
 
 interface AfrEnvInterface
 {
@@ -20,7 +23,7 @@ interface AfrEnvInterface
     public function registerEnv(bool $bMutableOverwrite = false, bool $bRegisterPutEnv = false): self;
 
     /**
-     * Run $oEnv->setWorkDir(__DIR__)->readEnv() or $oEnv->readEnvPhpFile(path)
+     * Run $oEnv->setBaseDir(__DIR__)->readEnv() or $oEnv->readEnvPhpFile(path)
      * @param string $sKey
      * @param null $mFallback
      * @return array|mixed|null
@@ -34,7 +37,7 @@ interface AfrEnvInterface
      * @return $this
      * @throws AfrEnvException
      */
-    public function setWorkDir(string $sDir): self;
+    public function setBaseDir(string $sDir): self;
 
     /**
      * @param string $sKey
@@ -75,11 +78,6 @@ interface AfrEnvInterface
      */
     public function isStaging(): bool;
 
-    /**
-     * @return bool
-     * @throws AfrEnvException
-     */
-    public function isLocal(): bool;
 
     /**
      * @return bool

@@ -64,9 +64,9 @@ AfrCliTextColors::getInstance()->
 ---
 
 ```php
-`AfrInsideVendor`
+`AfrVendorDir`
 
-AfrInsideVendor::pathIsInsideVendorDir(__DIR__ || $sPath)->;
+AfrVendorDir::pathIsInsideVendorDir(__DIR__ || $sPath)->;
 
 ```
 

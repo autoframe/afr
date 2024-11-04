@@ -7,7 +7,7 @@ Namespace:
 
 Classes:
 - class AfrEnv extends AfrSingletonAbstractClass implements AfrEnvInterface
-  - setWorkDir(string $sDir)
+  - setBaseDir(string $sDir)
   - readEnv(int $iCacheSeconds, array $aExtraEnvDirsFiles = [])
     * iCacheSeconds is the number of cache seconds before expire. Use zero for no cache
     * aExtraEnvDirsFiles to add extra env directories and .env files
@@ -25,7 +25,6 @@ Classes:
   - flush()  reset and clear all
   - isProduction()
   - isStaging()
-  - isLocal()
   - isDev()
 - class AfrEnvParserClass extends AfrSingletonAbstractClass implements AfrEnvParserInterface
     - parseStr
@@ -53,7 +52,7 @@ Classes:
 # AfrEnv
 
     // GENERAL
-    $oEnv = AfrEnv::getInstance()->setWorkDir(__DIR__);
+    $oEnv = AfrEnv::getInstance()->setBaseDir(__DIR__);
     $oEnv->readEnv(0); //load env files from __DIR__ without cache
     $oEnv->readEnv(60); //cache loaded env file for 60 seconds
     $oEnv->setInlineEnvVar('FOO', 'BAR'); //set *[FOO]=BAR
@@ -92,10 +91,8 @@ Classes:
       'DEV',
       'PRODUCTION',
       'STAGING',
-      'LOCAL',
-      'CUSTOM',
     ]);
-    $oEnv->setInlineEnvVar('APP_ENV', 'CUSTOM');
+    $oEnv->setInlineEnvVar('APP_ENV', 'DEV');
     echo $oEnv->getEnv('APP_ENV'); //prints CUSTOM
 	
 ---

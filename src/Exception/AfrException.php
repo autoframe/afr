@@ -31,7 +31,10 @@ if (!class_exists(__NAMESPACE__ . '\AfrException', false)) {
          */
         public function __construct($message, $code = 0, Throwable $previous = null)
         {
+
+
             parent::__construct($message, $code, $previous);
+
         }
 
         /**
@@ -41,7 +44,15 @@ if (!class_exists(__NAMESPACE__ . '\AfrException', false)) {
          */
         public function __toString(): string
         {
-            return explode('\\',get_class($this))[0] . "[{$this->code}] {$this->message}\n";
+			$aClass = explode('\\',get_class($this));
+			$sMsg = end($aClass). "{code.{$this->code}} {$this->message}";
+	        if(($bIsCli = http_response_code() === false)){
+		        return
+			        (\Autoframe\Core\CliTools\AfrCliTextColors::getInstance()->colorRed('')->textGet()).
+			        $sMsg.
+			        (\Autoframe\Core\CliTools\AfrCliTextColors::getInstance()->colorDefaultAllBgStyle()->textGet());
+	        }
+            return $sMsg;
         }
 
     }

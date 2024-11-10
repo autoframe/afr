@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace Unit\InterfaceToConcrete;
 
 use Autoframe\Core\ClassDependency\AfrClassDependency;
+use Autoframe\Core\Env\AfrEnv;
 use Autoframe\Core\Exception\AfrException;
 use Autoframe\Core\InterfaceToConcrete\AfrMultiClassMapper;
 use PHPUnit\Framework\TestCase;
@@ -65,22 +66,25 @@ class B_AfrInterfaceToConcreteClassTest extends TestCase
 
 		$obj = null;
 		try {
-			$obj = new AfrInterfaceToConcreteClass($sEnv, $aEnvSettings, $aExtraPaths); //['DEV', 'PRODUCTION', 'STAGING', 'DEBUG']
+			if(!AfrEnv::getInstance()->getEnv('AFR_ENV')){
+				$_ENV['AFR_ENV'] = 'DEV';
+			}
+			$obj = new AfrInterfaceToConcreteClass($aEnvSettings, $aExtraPaths); //['DEV', 'PRODUCTION', 'STAGING', 'DEBUG']
 
 			$this->assertSame(
-				$obj->getEnvSettings()[AfrMultiClassMapper::ForceRegenerateAllButVendor],
+				$obj->getSettings(AfrMultiClassMapper::ForceRegenerateAllButVendor),
 				$bForceRegenerateAllButVendor,
 				'!$bForceRegenerateAllButVendor'
 			);
 
 			$this->assertSame(
-				$obj->getEnvSettings()[AfrMultiClassMapper::SilenceErrors],
+				$obj->getSettings(AfrMultiClassMapper::SilenceErrors),
 				$bGetSilenceErrors,
 				'!$bGetSilenceErrors'
 			);
 			$this->assertSame(true, count($obj->getPaths()) > 0, '!getPaths');
 
-			$iCacheExpireSeconds = $obj->getEnvSettings()[AfrMultiClassMapper::CacheExpireSeconds];
+			$iCacheExpireSeconds = $obj->getSettings(AfrMultiClassMapper::CacheExpireSeconds);
 			$this->assertSame(
 				true,
 				is_int($iCacheExpireSeconds) && $iCacheExpireSeconds > 1,

@@ -91,14 +91,20 @@ class AfrEnv extends AfrSingletonAbstractClass implements AfrEnvInterface
 	 */
 	public function getEnv(string $sKey = '', $mFallback = null)
 	{
-		//TODO test fallback
 		$this->validateAll();
 		if (strlen($sKey)) {
-			return
+			$mVal =
 					$this->aEnvData[$sKey] ??
 					$_ENV[$sKey] ??
 					getenv($sKey) ?:
-					(defined($sKey) ? constant($sKey) : $mFallback);
+					(defined($sKey) ? constant($sKey) : $mFallback); //TODO test fallback
+			if($sKey === 'AFR_ENV' && empty($mVal)) {
+				throw new AfrEnvException('AFR_ENV is not set! Please configure and load tenant');
+			}
+			elseif($sKey === 'AFR_DEBUG' &&  strlen((string)$mVal)<1) {
+				throw new AfrEnvException('AFR_DEBUG is not a integer! Please configure and load tenant');
+			}
+			return $mVal;
 		}
 		return $this->aEnvData;
 	}
@@ -176,9 +182,6 @@ class AfrEnv extends AfrSingletonAbstractClass implements AfrEnvInterface
 	 */
 	public function readEnv(int $iCacheSeconds, array $aExtraEnvDirsFiles = []): self
 	{
-		$this->bValidated = false;
-		$this->aEnvDirsFiles = array_merge([$this->sBaseDir], $aExtraEnvDirsFiles);
-
 		if (
 			$iCacheSeconds > 0 &&
 			is_file($this->getCacheFileName()) &&
@@ -189,6 +192,8 @@ class AfrEnv extends AfrSingletonAbstractClass implements AfrEnvInterface
 			return $this;
 		}
 
+		$this->bValidated = false;
+		$this->aEnvDirsFiles = array_merge([$this->sBaseDir], $aExtraEnvDirsFiles);
 		foreach ($this->aEnvDirsFiles as $sSources) {
 			if (file_exists($sSources)) {
 				if (is_file($sSources)) {
@@ -260,6 +265,16 @@ class AfrEnv extends AfrSingletonAbstractClass implements AfrEnvInterface
 		return true;
 	}
 
+	/**
+	 * @return int
+	 * @throws AfrEnvException
+	 */
+	public function isDebug(): int
+	{
+		return (int)$this->getEnv('AFR_DEBUG',0);
+		return isset($this->aEnvData['AFR_DEBUG']) ? (int)$this->aEnvData['AFR_DEBUG'] : 0;
+	}
+
 
 	/**
 	 * @return void
@@ -278,7 +293,7 @@ class AfrEnv extends AfrSingletonAbstractClass implements AfrEnvInterface
 	/**
 	 * @return string
 	 */
-	protected function getCacheFileName(): string
+	public function getCacheFileName(): string
 	{
 		if (empty($this->sCacheFile)) {
 			$this->sCacheFile = $this->sBaseDir .
@@ -358,7 +373,6 @@ class AfrEnv extends AfrSingletonAbstractClass implements AfrEnvInterface
 	 */
 	protected function validateAll(): void
 	{
-
 		if (!$this->bValidated) {
 			$this->bValidated = $this->xetAfrEnvValidator()->validateAll($this->aEnvData);
 		}

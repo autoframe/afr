@@ -85,6 +85,13 @@ interface AfrEnvInterface
      */
     public function isDev(): bool;
 
+
+	/**
+	 * @throws AfrEnvException
+	 */
+	public function isDebug(): int;
+
+
     /**
      * @param array $aKeys
      * @return AfrEnvValidatorInterface

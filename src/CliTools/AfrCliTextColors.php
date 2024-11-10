@@ -70,7 +70,7 @@ class AfrCliTextColors
 
     public function styleDefaultAllBgColor(string $sAppend = ''): self
     {
-        return $this->textAppend("\033[0m" . $sAppend);
+        return $this->textAppend(sprintf("\033[0m%s", $sAppend));
     }
 
     public function styleBold(bool $bOn): self

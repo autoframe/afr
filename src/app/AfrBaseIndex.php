@@ -3,39 +3,51 @@
 namespace Autoframe\Core\App;
 
 use Autoframe\Core\Exception\AfrException;
+use Autoframe\Core\InterfaceToConcrete\AfrInterfaceToConcreteInterface;
+use Autoframe\Core\Router\Contracts\AfrRouterInterface;
 use Autoframe\Core\Tenant\AfrTenant;
 use Autoframe\Core\Env\AfrEnv;
+use Autoframe\Core\ClassDependency\AfrClassDependency;
 
 $_SERVER['REQUEST_TIME_FLOAT'] ??= microtime(true);
 
 class AfrBaseIndex
 {
+	const SET_CONSTANTS_FOR_ALL_TENANTS = 'setConstantsAllTenants';
 	const BASE_INIT = 'baseInit';
-	const SET_CONSTANTS = 'setConstants';
+	const AFR_CONTAINER = 'afrContainer';
 	const TENANT_SET_PATH = 'tenantSetPath';
-	const TENANT_LOAD = 'tenantLoad';
+	const TENANT_LOAD = 'tenantLoad'; //TODO: tenant selector din CLI
 	const TENANT_EXTRA_CONFIG = 'tenantExtraConfig';
 	const ENV_SET_PATH = 'envSetPath';
 	const ENV_LOAD = 'envLoad';
 	const ENV_EXTRA_CONFIG = 'envExtraConfig';
+	const CONFIG_WIRED_PATH_CLASS = 'configWiredPathClass'; //
+	const EXTEND_AW_STRATEGIES_CONTEXT_BOUND = 'extendStrategyContextBound'; // AfrInterfaceToConcreteInterface
+	const CONTAINER_INIT = 'containerInit';
 	const MODULE_READ = 'moduleRead';
-	const APP_INIT = 'appInit';
-	const ROUTER_INIT = 'routerInit';
+	const REQUEST_INIT = 'requestInit';
+	const ROUTER_INIT = 'routerInit'; 		//TODO: tenant selector din CLI
+
 	const ROUTE_HANDEL = 'routeHandel';
 	const VIEW_RENDER = 'viewRender';
 	const SHUTDOWN_FX = 'shutdownFx';
 
 	const ORDER = [
-		self::SET_CONSTANTS,
+		self::SET_CONSTANTS_FOR_ALL_TENANTS,
 		self::BASE_INIT,
+		self::AFR_CONTAINER,
 		self::TENANT_SET_PATH,
 		self::ENV_SET_PATH,
 		self::TENANT_LOAD,
 		self::TENANT_EXTRA_CONFIG,
 		self::ENV_LOAD,
 		self::ENV_EXTRA_CONFIG,
+		self::CONFIG_WIRED_PATH_CLASS,
+		self::EXTEND_AW_STRATEGIES_CONTEXT_BOUND,
+		self::CONTAINER_INIT,
 		self::MODULE_READ,
-		self::APP_INIT,
+		self::REQUEST_INIT,
 		self::ROUTER_INIT,
 		self::ROUTE_HANDEL,
 		self::VIEW_RENDER,
@@ -50,7 +62,10 @@ class AfrBaseIndex
 
 	protected array $aStep = []; //from populateSteps()
 	protected string $sBaseDirPath;
-
+	protected string $sRouterClass = 'Autoframe\Core\Router\CliCache';//TODO router default
+	//protected string $sRouterClass = 'thfRouter';//TODO router default
+	protected static AfrRouterInterface $oRouterInstance; //TODO getInstanceCheck
+	protected static AfrBaseIndex $instance;
 
 	/**
 	 * @param string $sBaseDirPath
@@ -69,7 +84,7 @@ class AfrBaseIndex
 
 	protected function populateSteps(): void
 	{
-		$this->aStep[self::SET_CONSTANTS] = function () {
+		$this->aStep[self::SET_CONSTANTS_FOR_ALL_TENANTS] = function () {
 			if (is_file($sConstantsPath = $this->sBaseDirPath . DIRECTORY_SEPARATOR . 'constants.php')) {
 				include_once $sConstantsPath;
 			}
@@ -89,6 +104,7 @@ class AfrBaseIndex
 
 		$this->aStep[self::ENV_LOAD] = function () {
 			$oEnv = AfrEnv::getInstance();
+		//	$oEnv->setBaseDir($this->sBaseDirPath);
 			// Run $oEnv->setBaseDir(__DIR__)->readEnv() or $oEnv->readEnvPhpFile(path)
 			//	$oEnv->readEnv(0); //load env files from __DIR__ without cache
 			$oEnv->readEnv(
@@ -102,14 +118,40 @@ class AfrBaseIndex
 			); //cache loaded env file for 60 seconds
 		//	$oEnv->setInlineEnvVar('FOO', 'BAR'); //set *[FOO]=BAR
 
-			$oEnv->getEnv('APP_ENV'); //get env key
-			$oEnv->getEnv(); //get all env keys as array
+		//	$oEnv->getEnv('AFR_ENV'); //get env key
+		//	$oEnv->getEnv(); //get all env keys as array
 
 			$oEnv->registerEnv($bMutableOverwrite = true, $bRegisterPutEnv = true);
 			// populate $_SERVER, $_ENV and getenv()
 		};
 
+		$this->aStep[self::ROUTER_INIT] = function () {
+			if(!class_exists($this->sRouterClass)){
+				throw new AfrException('Router class does not exist!');
+			}
+			$sFqcn = $this->sRouterClass;
+			static::$oRouterInstance = AfrClassDependency::getClassInfo($this->sRouterClass)->isSingleton() ?
+				$sFqcn::getInstance() : new $sFqcn();
+			if(!static::$oRouterInstance instanceof AfrRouterInterface){
+				throw new AfrException('Router class does not implement AfrRouterInterface!');
+			}
+			return static::$oRouterInstance;
+		};
 
+		$this->aStep[self::ROUTE_HANDEL] = function () {
+			return (static::$oRouterInstance)();
+		};
+
+		$this->aStep[self::VIEW_RENDER] = function () {
+			return $aResults = static::$oRouterInstance->getCollectedResultsFromRoutes();
+		};
+
+
+	}
+
+	public static function getInstance(): AfrBaseIndex
+	{
+		return self::$instance;
 	}
 
 

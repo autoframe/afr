@@ -11,7 +11,6 @@ use Autoframe\Core\InterfaceToConcrete\Exception\AfrInterfaceToConcreteException
 use Autoframe\Core\Env\AfrEnv;
 
 use Closure;
-use Autoframe\Core\Container\LaraPort\Container;
 use Autoframe\Core\Container\Exception\BindingResolutionException;
 use Autoframe\Core\Container\Exception\CircularDependencyException;
 
@@ -34,6 +33,7 @@ class AfrContainerOverdrive extends Container
 	 */
 	protected function notInstantiable(string $concrete)
 	{
+		//TODO  daca chiar vreau sa tin incurcatura asta, o sa registrez ca si servicii restul de dependinte pentru interfata
 		/*$oAfrToConcreteStrategiesClass = AfrToConcreteStrategiesClass::getLatestInstance();
 		list($sFlag, $implementingClass) = explode('|', $oAfrToConcreteStrategiesClass->resolveInterfaceToConcrete(
 			$concrete, //not concrete, but the interface call this concrete :P
@@ -75,7 +75,6 @@ class AfrContainerOverdrive extends Container
 
 	/**
 	 * @return AfrInterfaceToConcreteInterface
-	 * @throws AfrInterfaceToConcreteException|AfrEnvException
 	 */
 	protected function getAfrInterfaceToConcrete(): AfrInterfaceToConcreteInterface
 	{
@@ -83,9 +82,7 @@ class AfrContainerOverdrive extends Container
 			if (!empty(AfrInterfaceToConcreteClass::$oLatestInstance)) {
 				$this->AfrInterfaceToConcreteInterface = AfrInterfaceToConcreteClass::$oLatestInstance;
 			} else {
-				$this->AfrInterfaceToConcreteInterface = new AfrInterfaceToConcreteClass(
-					AfrEnv::getInstance()->getEnv('AFR_ENV', 'PRODUCTION')
-				);
+				$this->AfrInterfaceToConcreteInterface = new AfrInterfaceToConcreteClass();
 			}
 		}
 		return $this->AfrInterfaceToConcreteInterface;
@@ -110,5 +107,29 @@ class AfrContainerOverdrive extends Container
 	{
 		return $this->sContext;
 	}
+
+
+	////////////////////////////////////////////////////////////////////////////////////////////////
+	////////////////////////////////////////////////////////////////////////////////////////////////
+	////////////////////////////////////////////////////////////////////////////////////////////////
+	////////////////////////////////////////////////////////////////////////////////////////////////
+	////////////////////////////////////////////////////////////////////////////////////////////////
+	////////////////////////////////////////////////////////////////////////////////////////////////
+
+	protected function registerBaseBindings()
+	{
+		static::setInstance($this);
+
+		$this->instance('app', $this);
+
+		$this->instance(Container::class, $this);
+		$this->singleton(Mix::class);
+
+		$this->singleton(PackageManifest::class, fn () => new PackageManifest(
+			new Filesystem, $this->basePath(), $this->getCachedPackagesPath()
+		));
+	}
+
+
 
 }

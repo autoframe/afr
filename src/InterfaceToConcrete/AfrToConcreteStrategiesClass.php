@@ -45,7 +45,7 @@ class AfrToConcreteStrategiesClass implements AfrToConcreteStrategiesInterface
 	protected array $aContextNamespaceFilterArr = [];
 	protected array $aCache = [];
 
-	protected bool $bTenantToConcreteStrategiesConfigLoaded = false;
+	protected bool $bTenantToConcreteStrategiesConfigState = false;
 
 	//you can change / reorder / overwrite any using $this->addPriorityRules as you see fit
 	protected array $aPriorityRules = [
@@ -267,7 +267,7 @@ class AfrToConcreteStrategiesClass implements AfrToConcreteStrategiesInterface
 
 	protected function applyTenantToConcreteStrategies(): void
 	{
-		$this->bTenantToConcreteStrategiesConfigLoaded = true;
+		$this->bTenantToConcreteStrategiesConfigState = true;
 		if (!empty($sConfigFile = AfrTenant::getTenantToConcreteStrategiesFilePath())) {
 			(include $sConfigFile)($this);
 		}
@@ -287,7 +287,7 @@ class AfrToConcreteStrategiesClass implements AfrToConcreteStrategiesInterface
 	 */
 	public function resolveMap(array $aMappings, string $notConcreteFQCN, bool $bCache = true): string
 	{
-		if (!$this->bTenantToConcreteStrategiesConfigLoaded) {
+		if (!$this->bTenantToConcreteStrategiesConfigState) {
 			$this->applyTenantToConcreteStrategies();
 		}
 
@@ -669,6 +669,21 @@ class AfrToConcreteStrategiesClass implements AfrToConcreteStrategiesInterface
 			},
 
 		];
+	}
+
+
+	/**
+	 *
+	 * @param bool|null $bConfigLoaded
+	 * @return AfrToConcreteStrategiesInterface|bool
+	 */
+	public function xetTenantToConcreteStrategiesConfigState(bool $bConfigLoaded = null)
+	{
+		if($bConfigLoaded === null){ //get
+			return $this->bTenantToConcreteStrategiesConfigState;
+		}
+		$this->bTenantToConcreteStrategiesConfigState = $bConfigLoaded; //set
+		return $this;
 	}
 
 

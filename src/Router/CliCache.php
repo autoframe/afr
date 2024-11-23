@@ -2,7 +2,6 @@
 
 namespace Autoframe\Core\Router;
 
-use Autoframe\Core\CliTools\AfrCliDetect;
 use Autoframe\Core\CliTools\AfrCliTextColors;
 use Autoframe\Core\Env\AfrEnv;
 use Autoframe\Core\Router\Contracts\AfrRouterCliInterface;
@@ -10,10 +9,16 @@ use Autoframe\Core\Tenant\AfrTenant;
 
 class CliCache implements AfrRouterCliInterface
 {
+
+	public function __construct(AfrEnv $oEnv)
+	{
+		$oEnv->getEnv();
+	}
+
 	public function __invoke(): void
 	{
-		if (AfrCliDetect::isCli()) {
-			$aMethods = array_diff(get_class_methods($this), ['__invoke', 'getCollectedResultsFromRoutes']);
+		if (AfrTenant::isCli()) {
+			$aMethods = array_diff(get_class_methods($this), ['__invoke', '__construct','getCollectedResultsFromRoutes']);
 
 			$sCliMethodToCall = getopt('', ['afrCli:'])['afrCli'] ?? getopt('', ['afrCli::'])['afrCli'] ?? null;
 			if (in_array($sCliMethodToCall, $aMethods)) {
@@ -26,6 +31,7 @@ class CliCache implements AfrRouterCliInterface
 						return $this->$sMethod();
 					};
 				}
+	//			return;
 				while (true) {
 					if (AfrCliRouterHelper::cliQA($aOptions) === null) {
 						break;

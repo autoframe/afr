@@ -162,4 +162,11 @@ interface AfrToConcreteStrategiesInterface
      * @return array
      */
     public function getStrategies(): array;
+
+	/**
+	 *
+	 * @param bool|null $bConfigLoaded
+	 * @return AfrToConcreteStrategiesInterface|bool
+	 */
+	public function xetTenantToConcreteStrategiesConfigState(bool $bConfigLoaded = null);
 }

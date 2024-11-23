@@ -207,6 +207,17 @@ class AfrSessionPhp implements AfrSessionInterface
      */
     function session_module_name(?string $module = null)
     {
+		// https://gist.github.com/steverobbins/ff67d5ac1c8b52d50d4d
+	    if(rand(1,2)>0){
+			//TODO: test with memcached
+		    ini_set('display_errors', '1');
+		    session_save_path('tcp://127.0.0.1:11211?persistent=1&weight=2&timeout=10&retry_interval=10');
+		    session_module_name('memcache');
+		    session_start();
+		    var_dump($_SESSION['memc_time']??'first time', $nowTime = microtime(true));
+		    $_SESSION['memc_time'] = $nowTime;
+	    }
+
         return session_module_name($module);
     }
 
@@ -401,11 +412,11 @@ class AfrSessionPhp implements AfrSessionInterface
         ) {
             return false;
         }
-        if (headers_sent($filename, $linenum) === true) {
+        if (headers_sent($filename, $lineNum) === true) {
             throw new AfrException(
                 'Warning: ' . __CLASS__ . '->' . __FUNCTION__ . ': ' .
                 'Cannot send session cache limiter - ' .
-                "Headers already sent in $filename on line $linenum\n"
+                "Headers already sent in $filename on line $lineNum\n"
             );
         }
         if($aSessionOptions || $mergeWithProfile){

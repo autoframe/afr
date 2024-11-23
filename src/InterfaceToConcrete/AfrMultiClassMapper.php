@@ -7,6 +7,7 @@ use Autoframe\Core\Arr\Export\AfrArrExportArrayAsStringClass;
 use Autoframe\Core\FileSystem\OverWrite\AfrOverWriteClass;
 use Autoframe\Core\ClassDependency\AfrClassDependency;
 use Autoframe\Core\InterfaceToConcrete\Exception\AfrInterfaceToConcreteException;
+use Autoframe\Core\Tenant\AfrTenant;
 
 
 /**
@@ -57,18 +58,23 @@ class AfrMultiClassMapper
 			self::$bSilenceErrors = $oWiringPaths->getSettings(self::SilenceErrors);
 			self::$aNsClassMergedFromPathMap = self::$aRegeneratedByBuildNewNsClassFilesMap = [];
 
-			if (!empty($oWiringPaths->getSettings(self::CacheDir))) {
-				self::$sCacheDir = realpath($oWiringPaths->getSettings(self::CacheDir));
+			if (!empty($sCachePath = $oWiringPaths->getSettings(self::CacheDir))) {
+				self::$sCacheDir = (
+					//lazy exec after tenant exec
+					$sCachePath instanceof \Closure ? $sCachePath() : $sCachePath
+					). DIRECTORY_SEPARATOR . 'AfrMultiClassMapper' ;
 			}
 			if (empty(self::$sCacheDir)) { //fallback
-				self::$sCacheDir = (ini_get('sys_temp_dir') ?: sys_get_temp_dir()) ?: __DIR__ . DIRECTORY_SEPARATOR . 'cache';
+				self::$sCacheDir = ((ini_get('sys_temp_dir') ?: sys_get_temp_dir()) ?: __DIR__). DIRECTORY_SEPARATOR . 'AfrMultiClassMapper' ;
 			}
-			//TODO: de mutat in system TEMP dir / easy flush
-			if (!is_dir(self::$sCacheDir)) {
-				throw new AfrInterfaceToConcreteException('Dir not found ' . __CLASS__ . ': ' . self::$sCacheDir);
-			}
-			if (!is_file(self::$sCacheDir . DIRECTORY_SEPARATOR . '.gitignore')) {
-				file_put_contents(self::$sCacheDir . DIRECTORY_SEPARATOR . '.gitignore', "*.php\n*CheckTs\n");
+
+			if (!is_file($gitignore = self::$sCacheDir . DIRECTORY_SEPARATOR . '.gitignore')) {
+				if(!is_dir(self::$sCacheDir) && !mkdir(self::$sCacheDir, 0775, true)){
+					throw new AfrInterfaceToConcreteException('Dir not writable ' . __CLASS__ . ': ' . self::$sCacheDir);
+				}
+				if(file_put_contents($gitignore, "*.php\n*CheckTs\n")===false){
+					throw new AfrInterfaceToConcreteException('File not writable: '. $gitignore);
+				}
 			}
 		}
 	}

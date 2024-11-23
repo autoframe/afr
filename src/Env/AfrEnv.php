@@ -128,6 +128,7 @@ class AfrEnv extends AfrSingletonAbstractClass implements AfrEnvInterface
 	 */
 	public function setBaseDir(string $sDir): self
 	{
+
 		if (!is_dir($sDir)) {
 			throw new AfrEnvException('Unable to set the ENV word dir: ' . $sDir);
 		}

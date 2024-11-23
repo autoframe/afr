@@ -17,7 +17,7 @@ class AfrEnvEmptyTest extends TestCase
     public function AfrEnvEmptyTest(): void
     {
         $oEnv = AfrEnv::getInstance();
-        $this->assertSame('fallback',  $oEnv->getEnv('AFR_ENV','fallback'));
+        $this->assertSame('fallback',  $oEnv->getEnv('some_undefined_key','fallback'));
 	    try {
 		    $this->assertSame(true, $oEnv->isDev());
 	    } catch (AfrEnvException $e) {

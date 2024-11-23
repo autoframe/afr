@@ -3,6 +3,7 @@
 
 namespace Autoframe\Core\Session;
 
+use Autoframe\Core\Exception\AfrException;
 use Autoframe\Core\Object\AfrObjectAbstractSingletonFactory;
 /*
  * Choose Class Model:
@@ -54,7 +55,7 @@ class AfrSessionFactory extends AfrObjectAbstractSingletonFactory
 
     /**
      * @return object
-     * @throws \Autoframe\Core\Exception\AfrException
+     * @throws AfrException
      */
     final public static function getInstance(): object
     {
@@ -86,14 +87,14 @@ class AfrSessionFactory extends AfrObjectAbstractSingletonFactory
      * @param bool $bSetAsSelected
      * @return array
      */
-    private static function loadFrameworkProfiles(string $sProfile = '', bool $bSetAsSelected = false): array
+    protected static function loadFrameworkProfiles(string $sProfile = '', bool $bSetAsSelected = false): array
     {
         $aFrameworkProfiles = $aProfile = [];
 
         if (!$sProfile) {
             $sProfile = 'afr&nocache&cookie&subdomainsSession&iMinutes=302400&samesite=strict';
         }
-        if (isset($_SERVER['AFR_ENV']) && strtolower($_SERVER['AFR_ENV']) === 'dev') {
+        if (isset($_SERVER['AFR_ENV']) && strtolower($_SERVER['AFR_ENV']) === 'dev') { //TODO ENV
             if (strpos($sProfile, 'cookie') !== false && strpos($sProfile, 'cookie_dev') === false) {
                 $sProfile = str_replace('cookie', 'cookie_dev', $sProfile);
             }
@@ -119,7 +120,7 @@ class AfrSessionFactory extends AfrObjectAbstractSingletonFactory
         $sHostname = $_SERVER['SERVER_NAME'];
         if (substr_count($sProfile, 'subdomainsSession') && !filter_var($sHostname, FILTER_VALIDATE_IP)) {
             $sHostname = explode('.', $sHostname);
-            $sHostname = '.' . $sHostname[count($sHostname) - 1]; //add all subdomains
+            $sHostname = '.' . $sHostname[count($sHostname) - 1]; //add all subdomains //TODO refactor?? TLD?? last 2??
         }
 
         $aFrameworkProfiles['rcf'] = [

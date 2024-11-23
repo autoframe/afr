@@ -41,6 +41,7 @@
     "ext-apcu": "APC cache extension",
     "predis/predis": "^2.0 Redis support - dev bugs",
     "ext-simplexml": "SimpleXMLElement parser",
-    "ext-ftp": "*"
+    "ext-ftp": "*",
+    "ext-gd": "*"
   }
 }

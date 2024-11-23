@@ -108,7 +108,7 @@ trait AfrHttpRequest
      */
     protected function isCli():bool
     {
-        return http_response_code() === false;
+        return http_response_code() === false || \PHP_SAPI==='cli' ||  \PHP_SAPI === 'phpdbg';
         //return !(strpos(strtolower(php_sapi_name()), 'cli') === false);
     }
 

@@ -1,6 +1,6 @@
 <?php
 
-namespace Autoframe\Tenant;
+namespace Autoframe\Core\Event;
 
 //TODO de mergiuit cu clasa de log pt ury ca am acolo timings
 class AfrEvent

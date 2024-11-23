@@ -153,7 +153,7 @@ class AfrInterfaceToConcreteClass implements AfrInterfaceToConcreteInterface
 			// realpath(__DIR__) . DIRECTORY_SEPARATOR . 'cache';
 			//AfrMultiClassMapper::CacheDir => realpath(__DIR__) . DIRECTORY_SEPARATOR . 'cache',
 			//AfrMultiClassMapper::CacheDir => sys_get_temp_dir(),
-			AfrMultiClassMapper::CacheDir => AfrTenant::getTempDir(),
+			AfrMultiClassMapper::CacheDir => (fn() => AfrTenant::getTempDir()),
 
 			// Clean memory after job or keep AfrMultiClassMapper::$aNsClassMergedFromPathMap
 			// and access the raw data using AfrMultiClassMapper::getAllNsClassFilesMap()

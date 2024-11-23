@@ -59,6 +59,8 @@ trait AfrSingletonTrait
             // subclass to be created here.
             self::$instances[static::class] = new static();
             // TODO add configurable actions with AfrConfig
+	        //TODO closure dupa constructor
+	        //todo closure la fiecare get instance
             return self::$instances[static::class];
         }
         return self::$instances[static::class];

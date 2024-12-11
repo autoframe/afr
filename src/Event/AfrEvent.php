@@ -4,11 +4,18 @@ namespace Autoframe\Core\Event;
 
 //TODO de mergiuit cu clasa de log pt ury ca am acolo timings
 use Autoframe\Core\Afr\Afr;
+use Autoframe\Core\Env\Exception\AfrEnvException;
+use Autoframe\Core\Event\Exception\AfrEventException;
+use Autoframe\Core\String\Obj\AfrClosureToStr;
+use Throwable;
+use Closure;
 
 class AfrEvent
 {
 //	const AFR_EVENT = 'afr.event'; //applies on any event
+//	const AFR_EXCEPTION = 'afr.exception';
 	const AFR_BOOTSTRAP = 'afr.bootstrap';
+	const AFR_RUN = 'afr.run';
 	const DB_ACTION_START = 'db.action.start0';
 	const DB_QUERY_START = 'db.query.start1';
 	const DB_QUERY_END = 'db.query.complete2';
@@ -49,6 +56,7 @@ class AfrEvent
 	const X_ARGS = 'a';
 	const X_TRACE = 't';
 	const X_TIMING = 'm';
+	const X_WILDCARDS = 'w';
 
 
 	const  WILDCARD_STARTS_WITH = 'afr.*'; //applies on any event starting with afr.*
@@ -57,17 +65,24 @@ class AfrEvent
 	const  WILDCARD_STAR = '*'; //applies on any event
 
 	public static bool $bSlimTrace = true;
-	public static int $iTraceDepth = 4;
+	public static int $iTraceDepth = 5;
 
-	public static ?bool $bHrTime = null;
+	public static ?bool $bHrTime = false;
 
-	protected static array $aTriggeredEventsLog = [];
+	protected static array $aTriggeredEventsStats = [];
+	public static array $aTriggeredEventsResults = [];
 	protected static array $aOnEventClosures = [];
-	protected static array $aBoundToInnerScopeClosures = [];
 	protected static array $aWildcardEvents = [];
 
-	//todo de facut aici cu stack trace / timings / log? single responsability
-	public static function addEvent(
+
+	/**
+	 * @param string $sEvent
+	 * @param array|null $aArgs
+	 * @param int|null $iTraceDepth
+	 * @return array
+	 * @throws AfrEventException
+	 */
+	public static function dispatchEvent(
 		string $sEvent,
 		array  $aArgs = null,
 		int    $iTraceDepth = null
@@ -85,82 +100,109 @@ class AfrEvent
 		$aData = [
 			self::X_EVT => $sEvent,
 			self::X_TIMING => static::hrMicroTime(),
-			self::X_ARGS => $aArgs,
-			self::X_TRACE => $aTrace,
 		];
-		$aReturn = self::callEventClosure($sEvent, $aData, []);
+		if ($aArgs) {
+			$aData[self::X_ARGS] = $aArgs;
+		}
+		if ($aTrace) {
+			$aData[self::X_TRACE] = $aTrace;
+		}
+		$aResults = self::callEventClosure($sEvent, $aData, []);
 
-		//inner scope
-		foreach (self::$aBoundToInnerScopeClosures ?? [] as $sWildcardEvent => $aHow) {
-			if ($sWildcardEvent !== self::WILDCARD_STAR) {
-				if (
-					!empty($aHow[self::WILDCARD_STARTS_WITH]) &&
-					substr($sEvent, 0, $aHow[self::WILDCARD_STARTS_WITH][1]) !== $aHow[self::WILDCARD_STARTS_WITH][0]
-				) {
-					continue;
+		//wildcards
+		foreach (self::$aWildcardEvents ?? [] as $sWildcardEvent => $aHow) {
+			$bTrigger = ($sWildcardEvent === self::WILDCARD_STAR);
+			if (!$bTrigger && !empty($aHow[self::WILDCARD_STARTS_WITH]) && $aHow[self::WILDCARD_STARTS_WITH][0] ===
+				substr($sEvent, 0, $aHow[self::WILDCARD_STARTS_WITH][1])) {
+				$bTrigger = true;
+			}
+			if (!$bTrigger && !empty($aHow[self::WILDCARD_ENDS_WITH]) && $aHow[self::WILDCARD_ENDS_WITH][0] ===
+				substr($sEvent, -$aHow[self::WILDCARD_ENDS_WITH][1], $aHow[self::WILDCARD_ENDS_WITH][1])) {
+				$bTrigger = true;
+			}
+			if (!$bTrigger && !empty($aHow[self::WILDCARD_CONTAINS])) {
+				foreach ($aHow[self::WILDCARD_CONTAINS] as $sContains) {
+					if (strpos($sEvent, $sContains) !== false) {
+						$bTrigger = true;
+						break;
+					}
 				}
 			}
-			$aData[self::X_TIMING] = static::hrMicroTime();
-			$aReturn = self::callEventClosure($sWildcardEvent, $aData, $aReturn);
+			if (!$bTrigger) {
+				continue;
+			}
+			$aData[self::X_WILDCARDS] ??= [];
+			$aData[self::X_WILDCARDS][] = [
+				self::X_EVT => $sWildcardEvent,
+				self::X_TIMING => static::hrMicroTime(),
+			];
+			$aResults = self::callEventClosure($sWildcardEvent, $aData, $aResults);
 		}
 
-		return $aReturn;
+		self::$aTriggeredEventsStats[] = $aData;
+		return self::$aTriggeredEventsResults[] = $aResults;
 	}
 
 
-	protected static function callEventClosure(string $sEvent, array $aData, array $aReturn = []): array
+	/**
+	 * @param string $sEvent
+	 * @param array $aData
+	 * @param array $aResults
+	 * @return array
+	 * @throws AfrEventException
+	 */
+	protected static function callEventClosure(string $sEvent, array $aData, array $aResults): array
 	{
-		self::$aTriggeredEventsLog[] = $aData;
-		$iTriggeredEventsLogIndex = count(self::$aTriggeredEventsLog[]) - 1;
-
-		//targeted event
-		//TODO wildcard events!!!
-		/** @var \Closure $closure */
-		if ($sEvent !== self::WILDCARD_STAR) {
-			foreach (self::$aOnEventClosures[$sEvent] ?? [] as $closure) {
-				$aReturn[] = $closure($aData);
-			}
-		}
-
-		//generic event
-		foreach (self::$aOnEventClosures[self::WILDCARD_STAR] ?? [] as $closure) {
-			$aReturn[] = $closure($aData);
-		}
-
-		if (!empty(self::$aBoundToInnerScopeClosures[$sEvent]) || !empty(self::$aBoundToInnerScopeClosures[self::WILDCARD_STAR])) {
-			$oScopeInstance = null;
-			foreach (debug_backtrace(3) as $aTrace) {
-				if (!empty($aTrace['object'])) {
-					$oScopeInstance = $aTrace['object'];
-					break;
-				}
-			}
-			//TODO test!!!!
-			if ($oScopeInstance) {
-				//any event to inner scope
-				if ($sEvent !== self::WILDCARD_STAR) {
-					foreach (self::$aBoundToInnerScopeClosures[$sEvent] ?? [] as $closure) {
-						$aReturn[] = $closure->bindTo($oScopeInstance, $oScopeInstance)($aData);
+		$oScopeInstance = null;
+		foreach (self::$aOnEventClosures[$sEvent] ?? [] as $i => $aClosureAndScopeBound) {
+			/** @var Closure $closure */
+			[$closure, $bInnerBoundScope, $newScope] = $aClosureAndScopeBound;
+			if ($bInnerBoundScope) {
+				if ($oScopeInstance === null) { //detect once on each trace
+					$oScopeInstance = false;
+					foreach (debug_backtrace(3) as $aTrace) {
+						if (!empty($aTrace['object']) && is_object($aTrace['object'])) {
+							$oScopeInstance = $aTrace['object'];
+							break;
+						}
 					}
 				}
-
-				//generic event to inner scope
-				foreach (self::$aBoundToInnerScopeClosures[self::WILDCARD_STAR] ?? [] as $closure) {
-					$aReturn[] = $closure->bindTo($oScopeInstance, $oScopeInstance)($aData);
+				if ($oScopeInstance) {
+					if ($oScopeInstance instanceof Throwable) {
+						$oScopeInstance = false;
+						continue; //prevent infinite loop inside error scoping
+					}
+					$newBoundClosure = $closure->bindTo(
+						$oScopeInstance,
+						$newScope === true ? $oScopeInstance : $newScope
+					);
+					if ($newBoundClosure instanceof Closure) {
+						$closure = $newBoundClosure;
+					} else {
+						$bFatal = false;
+						if (Afr::app()) {
+							try {
+								$bFatal = Afr::app()->env()->getEnv('AFR_EVENT_BIND_EXCEPTION_IS_FATAL_ERROR', true);
+							} catch (Throwable $e) {
+								$bFatal = true;
+							}
+						}
+						if ($bFatal) {
+							unset($aClosureAndScopeBound[0]);
+							throw new AfrEventException(
+								'Unable to bind #index.' . $i . ' from event(' . $sEvent . ', ' . $aData[self::X_EVT] .
+								') to scope(' . get_class($oScopeInstance) . ') for Closure(scope,' .
+								implode(',', $aClosureAndScopeBound) . '): ' . AfrClosureToStr::dump($closure)
+							);
+						}
+					}
 				}
 			}
-
+			// FINALLY, call
+			$aResults[$sEvent] = $closure($aData); //call closure
 		}
 
-
-		//something has changed inside the aData, because of closures using reference
-		//TODO test affirmation
-		if (self::$aTriggeredEventsLog[$iTriggeredEventsLogIndex] !== $aData) {
-			self::$aTriggeredEventsLog[$iTriggeredEventsLogIndex] = $aData;
-		}
-
-
-		return $aReturn;
+		return $aResults;
 	}
 
 
@@ -179,60 +221,42 @@ class AfrEvent
 
 	/**
 	 * @param string $sEvent Event name: db.query.start or wildcard: db.* | *.start | db.*.start | *.*.*.rt
-	 * @param \Closure $closure What to do, and receive ($aData)
-	 * @param bool $bInnerBoundScope bindTo($this,$this) inside the instance that triggered the event
+	 * @param Closure $closure What to do, and receive ($aData)
+	 * @param bool $bPrependQueue the closure should be placed at the stack beginning or appended at the end?
+	 * @param bool $bInnerBoundScope true = $newThis on Closure::bindTo(?object $newThis, object|string|null $newScope = "static")
+	 * @param object|string|null $newScope true = $newThis|"static"|null
 	 * @return void
 	 */
-	public static function addOnEventClosure(string $sEvent, \Closure $closure, bool $bInnerBoundScope): void
+	public static function addEventClosure(
+		string  $sEvent,
+		Closure $closure,
+		bool    $bInnerBoundScope = false,
+		        $newScope = true,
+		bool    $bPrependQueue = false
+	): void
 	{
-		if ($bInnerBoundScope) {
-			self::$aBoundToInnerScopeClosures[$sEvent] ??= [];
-			self::$aBoundToInnerScopeClosures[$sEvent][] = $closure;
+		self::$aOnEventClosures[$sEvent] ??= [];
+		if ($bPrependQueue) {
+			self::$aOnEventClosures[$sEvent] = array_merge(
+				[[$closure, $bInnerBoundScope, $newScope]],
+				self::$aOnEventClosures[$sEvent]
+			);
 		} else {
-			self::$aOnEventClosures[$sEvent] ??= [];
-			self::$aOnEventClosures[$sEvent][] = $closure;
+			self::$aOnEventClosures[$sEvent][] = [$closure, $bInnerBoundScope, $newScope];
 		}
 
-		if (empty(self::$aWildcardEvents[$sEvent]) && substr_count($sEvent, self::WILDCARD_STAR) > 0) {
-			$aMap = [];
-			if ($sEvent === self::WILDCARD_STAR) { //*
-				self::$aWildcardEvents[$sEvent] = $aMap[self::WILDCARD_STAR] = true; //match any event
-			} else {
-				$aSections = explode(self::WILDCARD_STAR, $sEvent);
-				$iSections = count($aSections);
-				if (($iLen = strlen($aSections[0])) > 0) {
-					$aMap[self::WILDCARD_STARTS_WITH] = [$aSections[0], $iLen];
-				}
-				if (($iLen = strlen($aSections[$iSections - 1])) > 0) {
-					$aMap[self::WILDCARD_ENDS_WITH] = [$aSections[$iSections - 1], $iLen];
-				}
-				if ($iSections > 2) {
-					foreach ($aSections as $i => $sSection) {
-						if ($i === 0 || $i === $iSections - 1 || strlen($sSection) === 0) {
-							continue;
-						}
-						$aMap[self::WILDCARD_CONTAINS] = array_merge(
-							$aMap[self::WILDCARD_CONTAINS] ?? [],
-							[$sSection]
-						);
-					}
-
-				}
-			}
-			self::$aWildcardEvents[$sEvent] = $aMap;
-		}
-
+		self::addWildcardEvent($sEvent);
 
 	}
 
 	public static function getTriggeredEventsLog(): array
 	{
-		return self::$aTriggeredEventsLog;
+		return self::$aTriggeredEventsStats;
 	}
 
-	public static function getEventClosures(bool $bGetInnerScopeOnly = false): array
+	public static function getEventClosures(): array
 	{
-		return $bGetInnerScopeOnly ? self::$aBoundToInnerScopeClosures : self::$aOnEventClosures;
+		return self::$aOnEventClosures;
 	}
 
 	public static function getWildcardConfig(): array
@@ -256,7 +280,7 @@ class AfrEvent
 						(int)Afr::app()->env()->getEnv($sEnvTraceLimitKey, $iTraceDepth),
 						$iTraceDepth
 					);
-				} catch (\Throwable $e) {
+				} catch (Throwable $e) {
 				}
 			} elseif (!empty($_ENV[$sEnvTraceLimitKey])) {
 				$iTraceDepth = max((int)$_ENV[$sEnvTraceLimitKey], $iTraceDepth);
@@ -291,7 +315,7 @@ class AfrEvent
 				$sClass = ($bSlim ? basename($sClass) : $sClass) . ($aInfo['type'] ?? ' ');
 			}
 
-			$aTrace[] = $file . ':' . ($aInfo['line'] ?? 0) . "\t" . $sClass . ($aInfo['function'] ?? '') . '()';
+			$aTrace[] = $file . ':' . ($aInfo['line'] ?? 0) . "\t" . trim($sClass) . ($aInfo['function'] ?? '') . '()';
 		}
 		return $aTrace;
 	}
@@ -303,5 +327,36 @@ class AfrEvent
 	{
 		static::$bHrTime ??= function_exists('hrtime');
 		return static::$bHrTime ? (hrtime(true) / 1e+6) : microtime(true);
+	}
+
+	/**
+	 * @param string $sEvent
+	 * @return void
+	 */
+	protected static function addWildcardEvent(string $sEvent): void
+	{
+		if (empty(self::$aWildcardEvents[$sEvent]) && substr_count($sEvent, self::WILDCARD_STAR) > 0) {
+			$aMap = [];
+			if ($sEvent === self::WILDCARD_STAR) { //*
+				self::$aWildcardEvents[$sEvent] = $aMap[self::WILDCARD_STAR] = true; //match any event
+			} else {
+				$aSections = explode(self::WILDCARD_STAR, $sEvent);
+				$iSections = count($aSections);
+
+				foreach ($aSections as $i => $sSection) {
+					if ($i === 0) {
+						$aMap[self::WILDCARD_STARTS_WITH] = [$sSection, strlen($sSection)];
+					} elseif ($i === $iSections - 1) {
+						$aMap[self::WILDCARD_ENDS_WITH] = [$sSection, strlen($sSection)];
+					} else {
+						$aMap[self::WILDCARD_CONTAINS] = array_merge(
+							$aMap[self::WILDCARD_CONTAINS] ?? [],
+							[$sSection]
+						);
+					}
+				}
+			}
+			self::$aWildcardEvents[$sEvent] = $aMap;
+		}
 	}
 }
